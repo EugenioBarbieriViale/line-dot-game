@@ -13,8 +13,8 @@
 #define X 1000
 #define Y 800
 
-#define N 40 // number of points
-#define R 5  // radius of points
+#define N 30 // number of points
+#define R 7  // radius of points
 
 #define BORDER 100 // distance from X and Y
 #define RECT_SIZE 20 
@@ -35,7 +35,7 @@ void create_path(Vector2 points[], Vector2 yellow_path[], Vector2 blue_path[], V
 void draw_lines(Vector2 yellow_path[], Vector2 blue_path[]);
 
 bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2);
-bool line_collision(Vector2 yellow_path[], Vector2 blue_path[]);
+void line_collision(Vector2 yellow_path[], Vector2 blue_path[], bool *quit);
 
 bool game_over(Vector2 mouse_pos, Rectangle yellow, Rectangle blue);
 
@@ -58,7 +58,6 @@ int main() {
 
     int turn = 0;
     bool quit = false;
-    bool collision = false;
 
     init_points(points);
 
@@ -66,12 +65,12 @@ int main() {
     SetTargetFPS(60);       
 
 
-    while (!WindowShouldClose() && !quit && !collision) {
+    while (!WindowShouldClose() && !quit) {
         Vector2 mouse_pos = GetMousePosition();
         quit = game_over(mouse_pos, yellow, blue);
 
         create_path(points, yellow_path, blue_path, mouse_pos, &turn);
-        collision = line_collision(yellow_path, blue_path);
+        line_collision(yellow_path, blue_path, &quit);
 
         BeginDrawing();
         ClearBackground(GRAY);
@@ -171,7 +170,8 @@ bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
     float numerator1 = ((start1.y - start2.y) * (end2.x - start2.x)) - ((start1.x - start2.x) * (end2.y - start2.y));
     float numerator2 = ((start1.y - start2.y) * (end1.x - start1.x)) - ((start1.x - start2.x) * (end1.y - start1.y));
 
-    if (denominator == 0) return numerator1 == 0 && numerator2 == 0;
+    if (denominator == 0)
+        return numerator1 == 0 && numerator2 == 0;
     
     float r = numerator1 / denominator;
     float s = numerator2 / denominator;
@@ -179,24 +179,12 @@ bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
     return (r > 0 && r < 1) && (s > 0 && s < 1);
 }
 
-bool line_collision(Vector2 yellow_path[], Vector2 blue_path[]) {
-    bool yellow_coll, blue_coll;
-
+void line_collision(Vector2 yellow_path[], Vector2 blue_path[], bool *quit) {
+    printf(".....................\n");
     for (int i=0; i<yellow_count; i += 2) {
         for (int j=0; j<blue_count; j += 2) {
-            yellow_coll = is_intersecting(yellow_path[i], yellow_path[i+1], blue_path[j], blue_path[j+1]);
-            if (yellow_coll)
-                return yellow_coll;
+            printf("y %d, b %d\n", yellow_count, blue_count);
+            *quit = is_intersecting(yellow_path[i], yellow_path[i+1], blue_path[j], blue_path[j+1]);
         }
     }
-
-    for (int i=0; i<blue_count; i += 2) {
-        for (int j=0; j<yellow_count; j += 2) {
-            blue_coll = is_intersecting(blue_path[i], blue_path[i+1], yellow_path[j], yellow_path[j+1]);
-            if (blue_coll)
-                return blue_coll;
-        }
-    }
-
-    return (yellow_coll || blue_coll);
 }
