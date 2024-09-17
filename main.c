@@ -23,19 +23,18 @@
 int yellow_count = 1;
 int blue_count = 1;
 
-float rand_float();
-
 void init_points(Vector2 points[]);
 void draw_points(Vector2 points[]);
 
-int choose_turn(int turn);
+void choose_turn(int turn);
 bool clicked(Vector2 current_pos, Vector2 mouse_pos);
 
-void create_path(Vector2 points[], Vector2 yellow_path[], Vector2 blue_path[], Vector2 mouse_pos, int *turn);
+void create_path(Vector2 points[], Vector2 yellow_path[], Vector2 blue_path[], Vector2 mouse_pos, int *turn, bool *quit);
 void draw_lines(Vector2 yellow_path[], Vector2 blue_path[]);
 
 bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2);
-void line_collision(Vector2 yellow_path[], Vector2 blue_path[], bool *quit);
+/* void line_collision(Vector2 yellow_path[], Vector2 blue_path[], bool *quit); */
+void point_occupied(Vector2 current_pos, Vector2 yellow_path[], Vector2 blue_path[], bool *quit);
 
 bool game_over(Vector2 mouse_pos, Rectangle yellow, Rectangle blue);
 
@@ -69,8 +68,8 @@ int main() {
         Vector2 mouse_pos = GetMousePosition();
         quit = game_over(mouse_pos, yellow, blue);
 
-        create_path(points, yellow_path, blue_path, mouse_pos, &turn);
-        line_collision(yellow_path, blue_path, &quit);
+        create_path(points, yellow_path, blue_path, mouse_pos, &turn, &quit);
+        /* line_collision(yellow_path, blue_path, &quit); */
 
         BeginDrawing();
         ClearBackground(GRAY);
@@ -127,21 +126,20 @@ bool game_over(Vector2 mouse_pos, Rectangle yellow, Rectangle blue) {
     return false;
 }
 
-int choose_turn(int turn) {
-    if (turn % 2 == 0) {
+void choose_turn(int turn) {
+    if (turn % 2 == 0)
         DrawText("YELLOW'S TURN", 10, 10, 30, BLACK);
-        return 0;
-    } else {
+    else
         DrawText("BLUE'S TURN", 10, 10, 30, BLACK);
-        return 1;
-    }
 }
 
-void create_path(Vector2 points[], Vector2 yellow_path[], Vector2 blue_path[], Vector2 mouse_pos, int *turn) {
+void create_path(Vector2 points[], Vector2 yellow_path[], Vector2 blue_path[], Vector2 mouse_pos, int *turn, bool *quit) {
     for (int i=0; i<N; i++) {
-
         if (clicked(points[i], mouse_pos)) {
-            if (choose_turn(*turn) == 0) {
+
+            point_occupied(points[i], yellow_path, blue_path, quit);
+
+            if ((*turn) % 2 == 0) {
                 yellow_path[yellow_count] = points[i];
                 yellow_count++;
             } 
@@ -165,6 +163,21 @@ void draw_lines(Vector2 yellow_path[], Vector2 blue_path[]) {
     }
 }
 
+bool VectorEqual(Vector2 v1, Vector2 v2) {
+    return (v1.x == v2.x) && (v1.y == v2.y);
+}
+
+void point_occupied(Vector2 current_pos, Vector2 yellow_path[], Vector2 blue_path[], bool *quit) {
+    for (int i=0; i<yellow_count; i++) {
+        if (VectorEqual(current_pos, yellow_path[i]))
+            *quit = true;
+    }
+    for (int i=0; i<blue_count; i++) {
+        if (VectorEqual(current_pos, blue_path[i]))
+            *quit = true;
+    }
+}
+
 bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2) {
     float denominator = ((end1.x - start1.x) * (end2.y - start2.y)) - ((end1.y - start1.y) * (end2.x - start2.x));
     float numerator1 = ((start1.y - start2.y) * (end2.x - start2.x)) - ((start1.x - start2.x) * (end2.y - start2.y));
@@ -177,14 +190,4 @@ bool is_intersecting(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
     float s = numerator2 / denominator;
 
     return (r > 0 && r < 1) && (s > 0 && s < 1);
-}
-
-void line_collision(Vector2 yellow_path[], Vector2 blue_path[], bool *quit) {
-    printf(".....................\n");
-    for (int i=0; i<yellow_count; i += 2) {
-        for (int j=0; j<blue_count; j += 2) {
-            printf("y %d, b %d\n", yellow_count, blue_count);
-            *quit = is_intersecting(yellow_path[i], yellow_path[i+1], blue_path[j], blue_path[j+1]);
-        }
-    }
 }
